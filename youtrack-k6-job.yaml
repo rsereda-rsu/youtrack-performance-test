@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: youtrack-k6-stress
+  namespace: perf-test
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: youtrack-k6-stress
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          imagePullPolicy: IfNotPresent
+          command: ["k6", "run", "/scripts/youtrack-k6.js"]
+          env:
+            - name: BASE_URL
+              value: "https://your-youtrack.example.com"
+            - name: YOUTRACK_PROJECT
+              value: "DEMO"
+            - name: SEARCH_TOP
+              value: "20"
+            - name: UPDATE_MODE
+              value: "comment"
+            - name: ISSUE_ID_PREFIX
+              value: "DEMO"
+            - name: UPDATE_ISSUE_COUNT
+              value: "200"
+            - name: YOUTRACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: youtrack-k6-secret
+                  key: YOUTRACK_TOKEN
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+      volumes:
+        - name: script
+          configMap:
+            name: youtrack-k6-script
