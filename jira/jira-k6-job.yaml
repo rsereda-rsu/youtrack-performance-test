@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jira-k6-stress
+  namespace: perf-test
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command: ["k6", "run", "/scripts/jira-k6.js"]
+          env:
+            - name: BASE_URL
+              value: "https://your-jira.example.com"
+            - name: JIRA_API_VERSION
+              value: "2"
+            - name: AUTH_MODE
+              value: "basic"
+            - name: JIRA_BASIC_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: jira-k6-secret
+                  key: JIRA_BASIC_AUTH
+            - name: JIRA_PROJECT
+              value: "DEMO"
+            - name: ISSUE_KEY_PREFIX
+              value: "DEMO"
+            - name: UPDATE_ISSUE_COUNT
+              value: "200"
+            - name: UPDATE_MODE
+              value: "comment"
+            - name: SEARCH_MAX
+              value: "20"
+            - name: MIN_SLEEP
+              value: "0.2"
+            - name: MAX_SLEEP
+              value: "0.5"
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "4"
+              memory: "4Gi"
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+      volumes:
+        - name: script
+          configMap:
+            name: jira-k6-script
