@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: confluence-k6-stress
+  namespace: perf-test
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command: ["k6", "run", "/scripts/confluence-k6.js"]
+          env:
+            - name: BASE_URL
+              value: "https://your-confluence.example.com"
+            - name: AUTH_MODE
+              value: "basic"
+            - name: BASIC_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: confluence-k6-secret
+                  key: BASIC_AUTH
+            - name: SPACE_KEY
+              value: "TEST"
+            - name: SEARCH_LIMIT
+              value: "20"
+            - name: UPDATE_MODE
+              value: "comment"
+            - name: PAGE_ID_LIST
+              value: "123456,123457,123458"
+            - name: MIN_SLEEP
+              value: "0.2"
+            - name: MAX_SLEEP
+              value: "0.5"
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "4"
+              memory: "4Gi"
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+      volumes:
+        - name: script
+          configMap:
+            name: confluence-k6-script
